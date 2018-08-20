@@ -10,7 +10,6 @@ the parameters of t-SNE to get to its optimal solution
 """
 print(__doc__)
 
-#import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
@@ -20,7 +19,6 @@ from sklearn.preprocessing import scale,LabelEncoder
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from mpl_toolkits.mplot3d import Axes3D
-
 
 ################################################
 # compare1
@@ -79,37 +77,6 @@ for data, y, data_name in datasets:
 plt.savefig('compare1.png',dpi=1200)
 plt.show()
 
-##############################################
-import pandas as pd
-from sklearn.manifold import TSNE
-from matplotlib import pyplot as plt
-from sklearn.preprocessing import LabelEncoder,scale
-from sklearn.decomposition import PCA
-# data4
-meta_data = pd.read_csv('GSE110692_indrops_MouseTreg_VATSpleen_metadata.txt',sep=' ') 
-counts_data = pd.read_csv('GSE110692_indrops_MouseTreg_VATSpleen_counts.txt',sep=' ')
-cell_type = meta_data['cell_type']
-counts_data.columns = cell_type
-#counts_data.to_csv('GSE110692_indrops_MouseTreg_VATSpleen_dataCleared.csv')
-
-data = counts_data.transpose()
-X_sc, y_sc = (data.values, data.index)
-y_sc = LabelEncoder().fit_transform(y_sc)
-X_sc = scale(X_sc)
-
-tsne = TSNE(n_components=2,init='pca',random_state=1).fit_transform(X_sc)
-plt.scatter(tsne[:,0],tsne[:,1],c=y_sc,cmap='Set2')
-plt.savefig('data4-2.png',dpi=600)
-plt.show()
-
-pca = PCA(n_components=2,random_state=1).fit(X_sc)
-var = pca.explained_variance_ratio_*100
-pca_ = pca.transform(X_sc)
-plt.scatter(pca_[:,0],pca_[:,1],c=y_sc,cmap='Set2')
-plt.xlabel('PC1 %.2f' % var[0])
-plt.xlabel('PC2 %.2f' % var[1])
-plt.savefig('data4-pca2.png',dpi=600)
-plt.show()
 ################################################
 # compare2
 ################################################
@@ -159,11 +126,12 @@ plt.show()
 # compare3
 ################################################
 # t-SNE: tune hyperparameters -- perplexity
-perplexity = [2,30,100,200,500]
+perplexity = [2,30,100,200,500,1000]
 fig = plt.figure(figsize=(15,10))
 plot_num = 1
 for perp in perplexity:
-    tsne = TSNE(n_components=2,perplexity=perp,random_state=1,init='pca')
+    tsne = TSNE(n_components=2,perplexity=perp,learning_rate=200,
+                random_state=1,init='pca')
     t0 = time.time()
     X_tsne = tsne.fit_transform(X_dig)
     t1 = time.time()
@@ -173,41 +141,24 @@ for perp in perplexity:
                  transform=plt.gca().transAxes, size=10,
                  horizontalalignment='right')
     plot_num += 1
-plt.savefig('tune1-1.png',dpi=600)
+plt.savefig('tune1.png',dpi=600)
 plt.show()
 
 # t-SNE: tune hyperparameters -- learning rate
-learn_rate = [2,50,100,200,500,1000]
+learn_rate = [1e-3,1e-1,10,100,1000,5000]
 fig = plt.figure(figsize=(15,10))
 plot_num = 1
 for lr in learn_rate:
-    tsne = TSNE(n_components=2,perplexity=30,learning_rate=lr,random_state=1,init='pca')
+    tsne = TSNE(n_components=2,perplexity=30,learning_rate=lr,
+                random_state=1,init='pca')
     t0 = time.time()
     X_tsne = tsne.fit_transform(X_dig)
     t1 = time.time()
     ax = fig.add_subplot(2,3,plot_num)
     ax.scatter(X_tsne[:,0],X_tsne[:,1],c=y_dig,cmap='Set3')
-    ax.text(.99, .05, 'learn_rate: %d\ntime: %.2fs' % (lr,(t1-t0)),
+    ax.text(.99, .05, 'learn_rate: %s\ntime: %.2fs' % (str(lr),(t1-t0)),
                  transform=plt.gca().transAxes, size=10,
                  horizontalalignment='right')
     plot_num += 1
 plt.savefig('tune2.png',dpi=600)
-plt.show()
-
-# t-SNE: tune hyperparameters -- number of iterative steps
-iters = [2,10,100,200,500,1000]
-fig = plt.figure(figsize=(15,10))
-plot_num = 1
-for i in iters:
-    tsne = TSNE(n_components=2,random_state=1,init='pca',n_iter_without_progress=i)
-    t0 = time.time()
-    X_tsne = tsne.fit_transform(X_dig)
-    t1 = time.time()
-    ax = fig.add_subplot(2,3,plot_num)
-    ax.scatter(X_tsne[:,0],X_tsne[:,1],c=y_dig,cmap='Set3')
-    ax.text(.99, .05, 'Step: %d\ntime: %.2fs' % (i,(t1-t0)),
-                 transform=plt.gca().transAxes, size=10,
-                 horizontalalignment='right')
-    plot_num += 1
-plt.savefig('tune3.png',dpi=600)
 plt.show()
